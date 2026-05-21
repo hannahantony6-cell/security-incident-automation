@@ -82,5 +82,4 @@ docker run -it --rm --name n8n -p 5678:5678 n8nio/n8n
 - AI Classification: CRITICAL
 - Full incident report generated in under 30 seconds
 
-## 🎓 Built by
-Hannah Antony — Final Year B.Tech CSE
+
