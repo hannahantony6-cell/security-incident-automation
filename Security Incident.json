@@ -1,0 +1,210 @@
+{
+  "name": "Security Incident",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ab6883c6-c706-472f-9c3a-7606b659d7fc",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "81df7ff8-bbad-4ddc-98bb-d363a9ccef5b",
+      "name": "Webhook",
+      "webhookId": "ab6883c6-c706-472f-9c3a-7606b659d7fc"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_GROQ_API_KEY_HERE",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are a cybersecurity expert. Classify this alert.\\n\\nEvent: {{ $json.body.event_type }}\\nSeverity: {{ $json.body.severity }}\\nDescription: {{ $json.body.description }}\\nActor: {{ $json.body.actor }}\\n\\nRespond:\\nCLASSIFICATION: [CRITICAL/HIGH/LOW]\\nREASON: [one sentence]\\nACTION: [one sentence]\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "d3a2c025-f0b5-4145-ae7f-0f5002ccb508",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "P7ifefGGjEOl70j5",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "list",
+          "cachedResultName": "My Software Team"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10003",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "=Security Alert: {{ $('Webhook').item.json.body.event_type }}",
+        "additionalFields": {
+          "description": "=Severity: {{ $('Webhook').item.json.body.severity }} Repository: {{ $('Webhook').item.json.body.repository }} Actor: {{ $('Webhook').item.json.body.actor }} AI Classification: {{ $json.choices[0].message.content }}"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "d1e4f6c5-f796-48a3-8078-b2ebd1f42911",
+      "name": "Create an issue",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "IbLxbDuhGn9n5ndz",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_JIRA_API_TOKEN_HERE",
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "={\"text\": \"Security Alert! Event: {{ $('Webhook').item.json.body.event_type }} Severity: {{ $('Webhook').item.json.body.severity }} Repository: {{ $('Webhook').item.json.body.repository }} Actor: {{ $('Webhook').item.json.body.actor }}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "0aa85907-71b0-40b3-bcc2-9e2e5e71f4dd",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookData = $('Webhook').item.json.body;\nconst aiAnalysis = $('HTTP Request').item.json.choices[0].message.content;\nconst jiraTicket = $('Create an issue').item.json.key;\nconst now = new Date().toISOString();\n\nconst report = `\n========================================\n     SECURITY INCIDENT REPORT\n========================================\nDate & Time  : ${now}\nJira Ticket  : ${jiraTicket}\n\nINCIDENT DETAILS\n----------------\nEvent Type   : ${webhookData.event_type}\nRepository   : ${webhookData.repository}\nSeverity     : ${webhookData.severity.toUpperCase()}\nActor        : ${webhookData.actor}\nDescription  : ${webhookData.description}\n\nAI ANALYSIS\n-----------\n${aiAnalysis}\n\nACTIONS TAKEN\n-------------\n1. Alert received and logged automatically\n2. AI severity assessment completed\n3. Jira ticket ${jiraTicket} created\n4. Security team notified via Slack\n\nSTATUS: Under Investigation\n========================================\n`;\n\nreturn [{ json: { report } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "2014bc0e-0d0d-411e-b94e-3b76297f7e06",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_SLACK_WEBHOOK_URL_HERE",
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "={\"text\": \"📋 *INCIDENT REPORT GENERATED*\\n```{{ $json.report }}```\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "227882b4-f330-4ce1-9c97-670b15b2b138",
+      "name": "HTTP Request2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Create an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an issue": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "df0159fa-e90b-4bc4-be6e-451071c2290d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bc797d3456c40f80174785d9e20728a48fbce5feea96c1c4c14e55f3143eba77"
+  },
+  "id": "dW5rE7Owjm9nAGRW",
+  "tags": []
+}
